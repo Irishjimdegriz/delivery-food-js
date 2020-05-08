@@ -20,9 +20,19 @@ const restaurantTitle = document.querySelector('.restaurant-title');
 const rating = document.querySelector('.rating');
 const price = document.querySelector('.price');
 const category = document.querySelector('.category');
+const modalBody = document.querySelector('.modal-body');
+const modalPrice = document.querySelector('.modal-pricetag');
+const buttonClearCart = document.querySelector('.clear-cart');
 
 let login = localStorage.getItem('gloDelivery');
 const cart = [];
+
+const storageCart = localStorage.getItem('gloDeliveryCart');
+if (storageCart) {
+  JSON.parse(storageCart).forEach(function(item) {
+    cart.push(item);
+  });
+}
 
 const getData = async function(url) {
   
@@ -219,11 +229,63 @@ function addToCart(event) {
       });
     }
 
-    function renderCart() {
-      
-    }
-    
+    localStorage.setItem('gloDeliveryCart', JSON.stringify(cart));
   }
+}
+
+function renderCart() {
+  modalBody.textContent = '';
+
+  cart.forEach(function({ id, title, cost, count }) {
+    const itemCart = `
+    <div class="food-row">
+      <span class="food-name">${title}</span>
+      <strong class="food-price">${cost}</strong>
+      <div class="food-counter">
+        <button class="counter-button counter-minus" data-id=${id}>-</button>
+        <span class="counter">${count}</span>
+        <button class="counter-button counter-plus" data-id=${id}>+</button>
+      </div>
+    </div>
+    `;
+
+    modalBody.insertAdjacentHTML('afterBegin', itemCart);
+  });
+
+  const totalPrice = cart.reduce(function(result, item) { return result + (parseFloat(item.cost)) * item.count;}, 0);
+  modalPrice.textContent = totalPrice + ' ₽';
+}
+
+function changeCount(event) {
+  const target = event.target;
+
+  if (target.classList.contains('counter-button')) {
+    const food = cart.find(function(item) {
+      return item.id === target.dataset.id;
+    });
+
+    if (target.classList.contains('counter-minus')) {
+        food.count--;
+
+        if (food.count === 0) {
+          cart.splice(cart.indexOf(food), 1);
+        }
+    }  
+
+    if (target.classList.contains('counter-plus')) {
+      const food = cart.find(function(item) {
+        return item.id === target.dataset.id;
+      });
+      food.count++; 
+
+    }
+
+    renderCart();
+    localStorage.setItem('gloDeliveryCart', JSON.stringify(cart));
+  }
+
+  
+
 }
 
 function init() {
@@ -231,6 +293,13 @@ function init() {
     data.forEach(createCardRestaurant);
   });
   
+buttonClearCart.addEventListener('click', function(){
+  cart.length = 0;
+  renderCart();
+});
+
+  modalBody.addEventListener('click', changeCount);
+
   cardsRestaurants.addEventListener('click', openGoods);
   
   logo.addEventListener('click', function() {
